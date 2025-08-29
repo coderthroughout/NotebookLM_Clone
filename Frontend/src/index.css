@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-dark-300;
+  }
+  
+  body {
+    @apply bg-dark-50 text-white font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(1200px 800px at 10% -10%, rgba(99,102,241,0.15), transparent),
+                      radial-gradient(1000px 700px at 90% -20%, rgba(124,58,237,0.12), transparent);
+  }
+}
+
+@layer components {
+  .glass-effect {
+    @apply bg-dark-200/60 backdrop-blur-sm border border-dark-300/60 shadow-[0_10px_30px_rgba(0,0,0,0.25)];
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-black/30;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 to-accent-100 bg-clip-text text-transparent;
+  }
+  
+  .gradient-border {
+    @apply relative;
+  }
+  
+  .gradient-border::before {
+    @apply absolute inset-0 rounded-lg p-[1px] bg-gradient-to-r from-primary-400 to-accent-100;
+    content: '';
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-200;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-dark-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-dark-500;
+}
+
+/* Smooth animations */
+* {
+  transition: all 0.2s ease-in-out;
+}
