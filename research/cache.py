@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import os
-from typing import Optional
+import json
+from typing import Optional, Dict, Any
 
 
 def _hash_key(key: str) -> str:
@@ -32,5 +33,48 @@ def write_cache(base_dir: str, key: str, value: str) -> None:
             f.write(value)
     except Exception:
         pass
+
+
+# New functions for HTML and text caching
+CACHE_DIR = "cache"
+HTML_CACHE_SUBDIR = "html"
+TEXT_CACHE_SUBDIR = "text"
+
+os.makedirs(os.path.join(CACHE_DIR, HTML_CACHE_SUBDIR), exist_ok=True)
+os.makedirs(os.path.join(CACHE_DIR, TEXT_CACHE_SUBDIR), exist_ok=True)
+
+
+def _get_cache_path(url: str, subdir: str) -> str:
+    url_hash = hashlib.sha256(url.encode('utf-8')).hexdigest()
+    return os.path.join(CACHE_DIR, subdir, f"{url_hash}.json")
+
+
+def get_cached_html(url: str) -> Optional[str]:
+    cache_path = _get_cache_path(url, HTML_CACHE_SUBDIR)
+    if os.path.exists(cache_path):
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            return data.get("html")
+    return None
+
+
+def save_cached_html(url: str, html_content: str) -> None:
+    cache_path = _get_cache_path(url, HTML_CACHE_SUBDIR)
+    with open(cache_path, 'w', encoding='utf-8') as f:
+        json.dump({"url": url, "html": html_content}, f, ensure_ascii=False, indent=2)
+
+
+def get_cached_text(url: str) -> Optional[Dict[str, Any]]:
+    cache_path = _get_cache_path(url, TEXT_CACHE_SUBDIR)
+    if os.path.exists(cache_path):
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return None
+
+
+def save_cached_text(url: str, text: Optional[str], title: Optional[str]) -> None:
+    cache_path = _get_cache_path(url, TEXT_CACHE_SUBDIR)
+    with open(cache_path, 'w', encoding='utf-8') as f:
+        json.dump({"url": url, "text": text, "title": title}, f, ensure_ascii=False, indent=2)
 
 
