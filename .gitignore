@@ -22,8 +22,16 @@ __pycache__/
 # Data/Artifacts
 citations.db
 .cache_html/
+cache/
 assets_cache/
 out/
+
+# Generated Content & Test Files
+tested_response/
+*.json
+*.pkl
+vector_index.*
+simple_vector_index.*
 
 # Environment
 .env

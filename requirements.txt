@@ -1,3 +1,4 @@
+# Core Dependencies
 pydantic>=2.7
 httpx
 trafilatura
@@ -10,7 +11,17 @@ rich
 click
 tabulate
 PyMuPDF>=1.23.0
-sentence-transformers>=2.2.0
-faiss-cpu>=1.7.0
-robotexclusionrulesparser
 openai>=1.0.0
+
+# HTTP API
+fastapi
+uvicorn
+
+# Web Scraping
+robotexclusionrulesparser
+
+# Optional Dependencies (will work without them)
+# rank-bm25
+# simhash
+# pyyaml
+# playwright
