@@ -1,0 +1,139 @@
+# Research System Configuration
+# Configuration profiles for different environments and use cases
+
+# Default configuration profile
+default:
+  # Vector Indexing Configuration
+  vector_indexing:
+    model_name: "all-MiniLM-L6-v2"
+    dimension: 384
+    index_path: "vector_index.faiss"
+    simhash_threshold: 0.85
+    max_per_domain: 2
+  
+  # Hybrid Ranking Weights
+  ranking:
+    default_weights:
+      vector: 0.55        # Dense vector similarity
+      bm25: 0.25          # Text-based ranking (BM25)
+      credibility: 0.15   # Source credibility
+      freshness: 0.05     # Content freshness
+    
+    # Custom weight profiles for different use cases
+    profiles:
+      academic:
+        vector: 0.60
+        bm25: 0.20
+        credibility: 0.15
+        freshness: 0.05
+      
+      news:
+        vector: 0.40
+        bm25: 0.30
+        credibility: 0.20
+        freshness: 0.10
+      
+      technical:
+        vector: 0.70
+        bm25: 0.20
+        credibility: 0.08
+        freshness: 0.02
+  
+  # HTTP API Configuration
+  api:
+    host: "0.0.0.0"
+    port: 8000
+    cors_origins: ["*"]
+    max_results: 50
+    default_results: 12
+  
+  # Research Pipeline Configuration
+  pipeline:
+    default_search_results: 12
+    max_search_results: 50
+    credibility_threshold: 0.5
+    search_provider: "serpapi"
+  
+  # Content Generation Configuration
+  content_generation:
+    max_tokens_outline: 1000
+    max_tokens_script: 2000
+    max_tokens_slides: 1500
+    temperature: 0.7
+  
+  # Rate Limiting
+  rate_limiting:
+    max_requests_per_minute: 60
+    domain_delay_seconds: 0.5
+  
+  # Logging Configuration
+  logging:
+    level: "INFO"
+    file: "research.log"
+    format: "json"
+    include_job_id: true
+    include_url: true
+    include_latency: true
+
+# Development profile
+development:
+  extends: default
+  api:
+    host: "127.0.0.1"
+    port: 8000
+    cors_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
+  logging:
+    level: "DEBUG"
+    file: "research_dev.log"
+
+# Production profile
+production:
+  extends: default
+  api:
+    host: "0.0.0.0"
+    port: 8000
+    cors_origins: []  # Configure specific origins
+  logging:
+    level: "WARNING"
+    file: "/var/log/research.log"
+  rate_limiting:
+    max_requests_per_minute: 30
+    domain_delay_seconds: 1.0
+
+# Testing profile
+testing:
+  extends: default
+  vector_indexing:
+    index_path: "test_vector_index.faiss"
+  api:
+    host: "127.0.0.1"
+    port: 8001
+  logging:
+    level: "DEBUG"
+    file: "research_test.log"
+
+# High-precision profile (for academic/research use)
+high_precision:
+  extends: default
+  ranking:
+    default_weights:
+      vector: 0.70
+      bm25: 0.15
+      credibility: 0.12
+      freshness: 0.03
+  vector_indexing:
+    simhash_threshold: 0.90
+    max_per_domain: 1
+
+# High-recall profile (for comprehensive search)
+high_recall:
+  extends: default
+  ranking:
+    default_weights:
+      vector: 0.40
+      bm25: 0.35
+      credibility: 0.15
+      freshness: 0.10
+  vector_indexing:
+    simhash_threshold: 0.80
+    max_per_domain: 3
