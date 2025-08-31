@@ -4,9 +4,9 @@ import requests
 from typing import List
 from urllib.parse import urlencode
 
-import os
 from .models import SearchResult
 from .utils import normalize_url
+from .config import config
 
 
 def duckduckgo_search(query: str, num_results: int = 10) -> List[SearchResult]:
@@ -47,9 +47,13 @@ def duckduckgo_search(query: str, num_results: int = 10) -> List[SearchResult]:
 
 
 def serpapi_search(query: str, num_results: int = 10, hl: str = "en", gl: str = "us") -> List[SearchResult]:
-    key = os.environ.get("SERPAPI_API_KEY")
+    key = config.SERPAPI_API_KEY
     if not key:
+        print("❌ SERPAPI_API_KEY not found in configuration")
         return []
+    
+    print(f"🔍 Using SerpAPI key: {key[:8]}...")
+    
     params = {
         "engine": "google",
         "q": query,
@@ -58,6 +62,8 @@ def serpapi_search(query: str, num_results: int = 10, hl: str = "en", gl: str = 
         "hl": hl,
         "gl": gl,
     }
+    
+    print(f"🌐 Searching for: {query}")
     r = requests.get("https://serpapi.com/search.json", params=params, timeout=20)
     r.raise_for_status()
     data = r.json()
@@ -72,6 +78,8 @@ def serpapi_search(query: str, num_results: int = 10, hl: str = "en", gl: str = 
             results.append(SearchResult(title=title, url=normalize_url(link), rank=idx))
         except Exception:
             continue
+    
+    print(f"✅ Found {len(results)} results from SerpAPI")
     return results
 
 

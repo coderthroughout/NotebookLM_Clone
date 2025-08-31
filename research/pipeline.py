@@ -46,7 +46,7 @@ async def run_research(
                 
             # Score the source
             cred = score_source(extracted_page)
-            if cred < cred_threshold:
+            if cred.score < cred_threshold:
                 continue
                 
             # Normalize content into structured document
@@ -71,7 +71,7 @@ async def run_research(
                     site_name=extracted_page.site_name,
                     published=extracted_page.published,
                     snippet=snippet,
-                    credibility=cred,
+                    credibility=cred.score,
                     status_code=extracted_page.status_code,
                     content_length=extracted_page.content_length,
                     fetched_at=extracted_page.fetched_at,
