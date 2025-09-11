@@ -1,277 +1,365 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
-  BookOpen, 
   Brain, 
   Clock, 
-  CheckCircle,
-  AlertCircle,
-  ArrowRight
-} from 'lucide-react'
-import toast from 'react-hot-toast'
+  CheckCircle, 
+  XCircle,
+  Video,
+  Download,
+  Eye,
+  Sparkles
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import apiService, { Question, VideoStatusResponse } from '../services/api';
+import VideoGenerationProgress from '../components/VideoGenerationProgress';
+import VideoPlayer from '../components/VideoPlayer';
 
-// Mock data - replace with actual API calls
-const mockQuestions = [
-  {
-    id: '1',
-    question: 'What is the derivative of x² with respect to x?',
-    options: ['x', '2x', 'x²', '2x²'],
-    correctAnswer: 1,
-    subject: 'Calculus',
-    difficulty: 'Easy',
-    estimatedTime: '3-4 minutes'
-  },
-  {
-    id: '2',
-    question: 'Explain the concept of photosynthesis in plants.',
-    options: ['Energy conversion', 'Water absorption', 'Nutrient transport', 'All of the above'],
-    correctAnswer: 3,
-    subject: 'Biology',
-    difficulty: 'Medium',
-    estimatedTime: '4-5 minutes'
-  },
-  {
-    id: '3',
-    question: 'What is the chemical formula for water?',
-    options: ['H2O', 'CO2', 'O2', 'N2'],
-    correctAnswer: 0,
-    subject: 'Chemistry',
-    difficulty: 'Easy',
-    estimatedTime: '2-3 minutes'
-  },
-  {
-    id: '4',
-    question: 'Explain Newton\'s three laws of motion with examples.',
-    options: ['Basic physics', 'Advanced mechanics', 'Classical mechanics', 'Quantum physics'],
-    correctAnswer: 2,
-    subject: 'Physics',
-    difficulty: 'Hard',
-    estimatedTime: '5-6 minutes'
-  },
-  {
-    id: '5',
-    question: 'What is the capital of France?',
-    options: ['London', 'Berlin', 'Paris', 'Madrid'],
-    correctAnswer: 2,
-    subject: 'Geography',
-    difficulty: 'Easy',
-    estimatedTime: '1-2 minutes'
-  },
-  {
-    id: '6',
-    question: 'Explain the process of cellular respiration.',
-    options: ['Energy production', 'Oxygen intake', 'Carbon dioxide release', 'All of the above'],
-    correctAnswer: 3,
-    subject: 'Biology',
-    difficulty: 'Medium',
-    estimatedTime: '4-5 minutes'
-  }
-]
+interface QuestionCardProps {
+  question: Question;
+  onGenerateVideo: (question: Question) => void;
+  isGenerating: boolean;
+  hasVideo: boolean;
+  onViewVideo: (questionId: string) => void;
+}
 
-const QuestionsPage = () => {
-  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: number }>({})
-  const [processingStates, setProcessingStates] = useState<{ [key: string]: 'idle' | 'processing' | 'completed' | 'error' }>({})
-  const navigate = useNavigate()
+const QuestionCard: React.FC<QuestionCardProps> = ({
+  question,
+  onGenerateVideo,
+  isGenerating,
+  hasVideo,
+  onViewVideo
+}) => {
+  const [showSolution, setShowSolution] = useState(false);
 
-  const handleOptionSelect = (questionId: string, optionIndex: number) => {
-    setSelectedAnswers(prev => ({
-      ...prev,
-      [questionId]: optionIndex
-    }))
-  }
+  return (
+    <motion.div
+      className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-gray-700 hover:border-gray-600 transition-all duration-300"
+      whileHover={{ y: -5, scale: 1.02 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 mb-2">
+            <span className="px-3 py-1 bg-gray-700 text-gray-300 rounded-full text-sm font-medium">
+              {question.subject}
+            </span>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              question.difficulty === 'Beginner' ? 'bg-green-900 text-green-300' :
+              question.difficulty === 'Intermediate' ? 'bg-yellow-900 text-yellow-300' :
+              'bg-red-900 text-red-300'
+            }`}>
+              {question.difficulty}
+            </span>
+          </div>
+          <h3 className="text-xl font-semibold text-white mb-3">
+            {question.question}
+          </h3>
+        </div>
+      </div>
 
-  const handleProcessQuestion = async (questionId: string) => {
-    if (selectedAnswers[questionId] === undefined) {
-      toast.error('Please select an answer before processing')
-      return
-    }
+      {/* MCQ Options */}
+      <div className="space-y-3 mb-6">
+        {question.options.map((option, index) => (
+          <div
+            key={index}
+            className={`p-3 rounded-lg border transition-all duration-200 ${
+              index === question.correct_answer
+                ? 'border-green-500 bg-green-900/20 text-green-300'
+                : 'border-gray-600 bg-gray-800/50 text-gray-300 hover:border-gray-500'
+            }`}
+          >
+            <span className="font-medium mr-3">{String.fromCharCode(65 + index)}.</span>
+            {option}
+          </div>
+        ))}
+      </div>
 
-    // Update processing state
-    setProcessingStates(prev => ({
-      ...prev,
-      [questionId]: 'processing'
-    }))
+      {/* Solution Toggle */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowSolution(!showSolution)}
+          className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors duration-200"
+        >
+          <Brain className="w-4 h-4" />
+          <span>{showSolution ? 'Hide Solution' : 'Show Solution'}</span>
+        </button>
+        
+        <AnimatePresence>
+          {showSolution && (
+            <motion.div
+              className="mt-3 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="text-blue-300 text-sm">
+                <strong>Solution:</strong> {question.solution}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
+      {/* Action Buttons */}
+      <div className="flex items-center space-x-3">
+        {hasVideo ? (
+          <motion.button
+            onClick={() => onViewVideo(question.id)}
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium flex items-center justify-center space-x-2 transition-all duration-200"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Eye className="w-5 h-5" />
+            <span>View Video</span>
+          </motion.button>
+        ) : (
+          <motion.button
+            onClick={() => onGenerateVideo(question)}
+            disabled={isGenerating}
+            className={`flex-1 px-6 py-3 rounded-xl font-medium flex items-center justify-center space-x-2 transition-all duration-200 ${
+              isGenerating
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+            }`}
+            whileHover={!isGenerating ? { scale: 1.02 } : {}}
+            whileTap={!isGenerating ? { scale: 0.98 } : {}}
+          >
+            {isGenerating ? (
+              <>
+                <Clock className="w-5 h-5 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                <span>Generate Video</span>
+              </>
+            )}
+          </motion.button>
+        )}
+
+        {hasVideo && (
+          <motion.button
+            onClick={() => window.open(`http://localhost:8000/api/download-video/${question.id}`, '_blank')}
+            className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium flex items-center space-x-2 transition-all duration-200"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Download className="w-5 h-5" />
+          </motion.button>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const QuestionsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generatingQuestion, setGeneratingQuestion] = useState<string | null>(null);
+  const [showProgress, setShowProgress] = useState(false);
+  const [showVideo, setShowVideo] = useState<string | null>(null);
+  const [videoData, setVideoData] = useState<any>(null);
+
+  useEffect(() => {
+    loadQuestions();
+  }, []);
+
+  const loadQuestions = async () => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Navigate to processing page
-      navigate(`/processing/${questionId}`)
+      setLoading(true);
+      const questionsData = await apiService.getQuestions();
+      setQuestions(questionsData);
     } catch (error) {
-      setProcessingStates(prev => ({
-        ...prev,
-        [questionId]: 'error'
-      }))
-      toast.error('Failed to start processing')
+      console.error('Failed to load questions:', error);
+      toast.error('Failed to load questions');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case 'easy': return 'text-green-400 bg-green-400/10'
-      case 'medium': return 'text-yellow-400 bg-yellow-400/10'
-      case 'hard': return 'text-red-400 bg-red-400/10'
-      default: return 'text-gray-400 bg-gray-400/10'
+  const handleGenerateVideo = async (question: Question) => {
+    try {
+      setGeneratingQuestion(question.id);
+      setShowProgress(true);
+      setShowVideo(null);
+
+      const response = await apiService.generateVideo({
+        question_id: question.id,
+        question: question.question,
+        solution: question.solution
+      });
+
+      if (response.status === 'started') {
+        toast.success('Video generation started!');
+      } else if (response.status === 'already_exists') {
+        toast.success('Video already exists!');
+        setGeneratingQuestion(null);
+        setShowProgress(false);
+      }
+    } catch (error) {
+      console.error('Failed to start video generation:', error);
+      toast.error('Failed to start video generation');
+      setGeneratingQuestion(null);
+      setShowProgress(false);
     }
-  }
+  };
 
-  const getSubjectColor = (subject: string) => {
-    const colors = [
-      'text-blue-400 bg-blue-400/10',
-      'text-purple-400 bg-purple-400/10',
-      'text-green-400 bg-green-400/10',
-      'text-orange-400 bg-orange-400/10',
-      'text-pink-400 bg-pink-400/10'
-    ]
-    return colors[subject.length % colors.length]
+  const handleVideoComplete = (status: VideoStatusResponse) => {
+    setGeneratingQuestion(null);
+    setShowProgress(false);
+    toast.success('Video generation completed!');
+    
+    // Refresh questions to show video status
+    loadQuestions();
+  };
+
+  const handleVideoError = (error: string) => {
+    setGeneratingQuestion(null);
+    setShowProgress(false);
+    toast.error(`Video generation failed: ${error}`);
+  };
+
+  const handleViewVideo = async (questionId: string) => {
+    try {
+      const preview = await apiService.getVideoPreview(questionId);
+      setVideoData(preview);
+      setShowVideo(questionId);
+    } catch (error) {
+      console.error('Failed to load video preview:', error);
+      toast.error('Failed to load video');
+    }
+  };
+
+  const hasVideo = (questionId: string) => {
+    // Check if video exists by trying to get preview
+    return videoData?.question_id === questionId || false;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400 text-lg">Loading questions...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="pt-16 min-h-screen bg-dark-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* Header */}
+      <div className="container mx-auto px-6 py-8">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
           className="text-center mb-12"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Questions</span> Library
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Educational Questions
           </h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Select a question, choose your answer, and generate an AI-powered educational video
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+            Select a question to generate an AI-powered educational video. 
+            Each video is created with research-backed content and professional presentation.
           </p>
         </motion.div>
 
-        {/* Questions Grid */}
+        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {mockQuestions.map((question, index) => (
-            <motion.div
-              key={question.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="glass-effect rounded-2xl p-6 card-hover"
+          {/* Questions List */}
+          <div className="space-y-6">
+            <motion.h2
+              className="text-2xl font-semibold text-white mb-6"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
-              {/* Question Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    {question.question}
-                  </h3>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSubjectColor(question.subject)}`}>
-                      {question.subject}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
-                      {question.difficulty}
-                    </span>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium text-gray-400 bg-gray-400/10">
-                      <Clock className="w-3 h-3 inline mr-1" />
-                      {question.estimatedTime}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* MCQ Options */}
-              <div className="space-y-3 mb-6">
-                {question.options.map((option, optionIndex) => (
-                  <button
-                    key={optionIndex}
-                    onClick={() => handleOptionSelect(question.id, optionIndex)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all duration-200 ${
-                      selectedAnswers[question.id] === optionIndex
-                        ? 'border-primary-50 bg-primary-50/10 text-primary-50'
-                        : 'border-dark-400 hover:border-dark-300 hover:bg-dark-300/20 text-gray-300 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedAnswers[question.id] === optionIndex
-                          ? 'border-primary-50 bg-primary-50'
-                          : 'border-dark-400'
-                      }`}>
-                        {selectedAnswers[question.id] === optionIndex && (
-                          <CheckCircle className="w-3 h-3 text-white" />
-                        )}
-                      </div>
-                      <span className="font-medium">{option}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Process Button */}
-              <button
-                onClick={() => handleProcessQuestion(question.id)}
-                disabled={processingStates[question.id] === 'processing' || selectedAnswers[question.id] === undefined}
-                className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
-                  processingStates[question.id] === 'processing'
-                    ? 'bg-dark-400 text-gray-500 cursor-not-allowed'
-                    : selectedAnswers[question.id] !== undefined
-                    ? 'bg-gradient-to-r from-primary-300 to-primary-400 text-white hover:shadow-2xl hover:shadow-primary-400/25 transform hover:scale-105'
-                    : 'bg-dark-400 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                {processingStates[question.id] === 'processing' ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-5 h-5" />
-                    <span>Generate Video</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </button>
-
-              {/* Status Indicator */}
-              {processingStates[question.id] === 'completed' && (
-                <div className="mt-3 flex items-center justify-center text-green-400 text-sm">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Video generated successfully!
-                </div>
-              )}
-              {processingStates[question.id] === 'error' && (
-                <div className="mt-3 flex items-center justify-center text-red-400 text-sm">
-                  <AlertCircle className="w-4 h-4 mr-2" />
-                  Failed to generate video
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Bottom CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="text-center mt-16"
-        >
-          <div className="glass-effect rounded-2xl p-8 max-w-2xl mx-auto">
-            <Brain className="w-16 h-16 text-primary-50 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold mb-3 text-white">
-              Need More Questions?
-            </h3>
-            <p className="text-gray-300 mb-6">
-              Our AI system can generate custom questions and create comprehensive educational videos for any topic.
-            </p>
-            <button className="bg-gradient-to-r from-primary-50 to-accent-50 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-2xl hover:shadow-primary-50/25 transition-all duration-300 transform hover:scale-105">
-              Request Custom Questions
-            </button>
+              Available Questions
+            </motion.h2>
+            
+            {questions.map((question, index) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                onGenerateVideo={handleGenerateVideo}
+                isGenerating={generatingQuestion === question.id}
+                hasVideo={hasVideo(question.id)}
+                onViewVideo={handleViewVideo}
+              />
+            ))}
           </div>
-        </motion.div>
+
+          {/* Right Panel - Progress or Video */}
+          <div className="space-y-6">
+            <AnimatePresence mode="wait">
+              {showProgress && generatingQuestion && (
+                <motion.div
+                  key="progress"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <VideoGenerationProgress
+                    questionId={generatingQuestion}
+                    onComplete={handleVideoComplete}
+                    onError={handleVideoError}
+                  />
+                </motion.div>
+              )}
+
+              {showVideo && videoData && (
+                <motion.div
+                  key="video"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="mb-4">
+                    <h3 className="text-xl font-semibold text-white mb-2">Generated Video</h3>
+                    <p className="text-gray-400 text-sm">
+                      Watch your AI-generated educational video
+                    </p>
+                  </div>
+                  <VideoPlayer videoData={videoData} className="h-96" />
+                </motion.div>
+              )}
+
+              {!showProgress && !showVideo && (
+                <motion.div
+                  key="placeholder"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border border-gray-700 text-center"
+                >
+                  <Video className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Ready to Generate Videos
+                  </h3>
+                  <p className="text-gray-400">
+                    Select a question and click "Generate Video" to create an AI-powered educational video.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default QuestionsPage
+export default QuestionsPage;

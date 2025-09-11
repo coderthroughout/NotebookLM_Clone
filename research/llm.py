@@ -97,11 +97,18 @@ Return the response as a structured outline that can be used to generate a scrip
         )
         
         # For now, return the raw response. Later we can parse this into structured data
-        return {
+        result = {
             "outline": response.choices[0].message.content.strip(),
             "model": self.gpt4_model,
             "tokens_used": response.usage.total_tokens
         }
+        
+        # Cache the result
+        from .cache_manager import cache_manager
+        cache_key = f"outline_{question}_{solution}"
+        cache_manager.set_llm_cache(cache_key, result, self.gpt4_model)
+        
+        return result
     
     async def generate_script(self, outline: str, research_context: str) -> Dict[str, Any]:
         """
@@ -131,11 +138,18 @@ Format the script with clear scene breaks and timing information.
             temperature=self.temperature
         )
         
-        return {
+        result = {
             "script": response.choices[0].message.content.strip(),
             "model": self.gpt4_model,
             "tokens_used": response.usage.total_tokens
         }
+        
+        # Cache the result
+        from .cache_manager import cache_manager
+        cache_key = f"script_{outline[:100]}_{research_context[:100]}"
+        cache_manager.set_llm_cache(cache_key, result, self.gpt4_model)
+        
+        return result
     
     async def generate_slide_specs(self, script: str) -> Dict[str, Any]:
         """

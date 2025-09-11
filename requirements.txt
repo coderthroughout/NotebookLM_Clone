@@ -12,6 +12,14 @@ click
 tabulate
 PyMuPDF>=1.23.0
 openai>=1.0.0
+requests
+
+# Image and Video Processing
+Pillow>=10.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0
+jinja2>=3.1.0
 
 # HTTP API
 fastapi
@@ -24,4 +32,4 @@ robotexclusionrulesparser
 # rank-bm25
 # simhash
 # pyyaml
-# playwright
+playwright>=1.45.0

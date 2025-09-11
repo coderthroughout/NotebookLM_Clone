@@ -47,6 +47,14 @@ def duckduckgo_search(query: str, num_results: int = 10) -> List[SearchResult]:
 
 
 def serpapi_search(query: str, num_results: int = 10, hl: str = "en", gl: str = "us") -> List[SearchResult]:
+    from .cache_manager import cache_manager
+    
+    # Check cache first
+    cached_result = cache_manager.get_research_cache(query, "serpapi")
+    if cached_result:
+        print(f"📋 Using cached SerpAPI results for: {query}")
+        return [SearchResult(**item) for item in cached_result]
+    
     key = config.SERPAPI_API_KEY
     if not key:
         print("❌ SERPAPI_API_KEY not found in configuration")
@@ -78,6 +86,10 @@ def serpapi_search(query: str, num_results: int = 10, hl: str = "en", gl: str = 
             results.append(SearchResult(title=title, url=normalize_url(link), rank=idx))
         except Exception:
             continue
+    
+    # Cache the results
+    cache_data = [{"title": r.title, "url": str(r.url), "rank": r.rank} for r in results]
+    cache_manager.set_research_cache(query, cache_data, "serpapi")
     
     print(f"✅ Found {len(results)} results from SerpAPI")
     return results

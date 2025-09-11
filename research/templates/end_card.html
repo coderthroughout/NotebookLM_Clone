@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      @font-face { font-family: 'Inter'; src: local('Inter'), local('Arial'); }
+      html, body { margin:0; padding:0; width:1920px; height:1080px; }
+      body { background: radial-gradient(1200px 800px at 70% 30%, #0b1220, #0a0f1a); color:#e5e7eb; font-family: Inter, Arial, sans-serif; }
+      .wrap { box-sizing:border-box; padding:80px 120px; width:100%; height:100%; display:grid; grid-template-rows:auto 1fr; gap:48px; }
+      .title { font-size:64px; line-height:1.1; color:#60a5fa; text-shadow:0 2px 6px rgba(0,0,0,0.4); text-align:center; }
+      .sources { display:grid; grid-template-columns: 1fr 1fr; gap:32px; }
+      .source-list { font-size:32px; line-height:1.4; }
+      .source-item { margin: 20px 0; padding: 16px; background: rgba(2,6,23,0.45); border-radius:8px; border-left: 4px solid #60a5fa; }
+      .source-number { color:#60a5fa; font-weight:600; margin-right:12px; }
+      .source-title { color:#e5e7eb; font-weight:500; }
+      .source-url { color:#94a3b8; font-size:24px; margin-top:8px; }
+      .source-domain { color:#60a5fa; font-size:20px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="title">Sources & References</div>
+      <div class="sources">
+        <div class="source-list">
+          {% for source in sources[:sources|length//2] %}
+          <div class="source-item">
+            <span class="source-number">[{{ loop.index }}]</span>
+            <span class="source-title">{{ source.title }}</span>
+            <div class="source-url">{{ source.url }}</div>
+            <div class="source-domain">{{ source.domain }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="source-list">
+          {% for source in sources[sources|length//2:] %}
+          <div class="source-item">
+            <span class="source-number">[{{ loop.index + sources|length//2 }}]</span>
+            <span class="source-title">{{ source.title }}</span>
+            <div class="source-url">{{ source.url }}</div>
+            <div class="source-domain">{{ source.domain }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, HttpUrl, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 
 
@@ -72,4 +72,58 @@ class ExtractedPage(BaseModel):
     content_length: Optional[int] = None
     fetched_at: Optional[datetime] = None
 
+
+# ----------------------------
+# Phase A: Content Models
+# ----------------------------
+
+class Beat(BaseModel):
+    title: str
+    learning_goal: Optional[str] = None
+    key_points: List[str] = []
+    citations: List[HttpUrl] = []
+    estimated_time_s: Optional[float] = Field(default=None, ge=5.0, le=60.0)
+    planned_slides: Optional[int] = Field(default=None, ge=1, le=8)
+
+
+class OutlineModel(BaseModel):
+    title: Optional[str] = None
+    beats: List[Beat]
+
+
+class ScriptSection(BaseModel):
+    beat_title: str
+    narration: str
+    citations: List[HttpUrl] = []
+    estimated_time_s: Optional[float] = Field(default=None, ge=5.0, le=60.0)
+
+
+class ScriptModel(BaseModel):
+    title: Optional[str] = None
+    sections: List[ScriptSection]
+    total_time_s: Optional[float] = Field(default=None, ge=60.0, le=600.0)
+
+
+class VisualElement(BaseModel):
+    type: Literal["formula", "diagram", "chart", "image", "callout"]
+    content: Optional[str] = None
+    # Minimal diagram DSL support (optional fields)
+    nodes: Optional[List[dict]] = None
+    edges: Optional[List[dict]] = None
+
+
+class SlideSpec(BaseModel):
+    title: str
+    content: Optional[str] = None
+    bullets: Optional[List[str]] = None
+    visual_elements: Optional[List[VisualElement]] = None
+    duration: float = Field(default=6.0, ge=3.0, le=12.0)
+    type: Literal["title", "concept", "example", "formula", "summary"] = "concept"
+    citations: List[HttpUrl] = []
+    build_sequence: Optional[List[int]] = None
+    color_scheme: Optional[str] = None
+
+
+class SlidesModel(BaseModel):
+    slides: List[SlideSpec]
 
